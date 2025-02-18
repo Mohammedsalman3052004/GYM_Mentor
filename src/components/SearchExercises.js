@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { ThreeDots } from 'react-loader-spinner';
 
 import { exerciseOptions, fetchData } from '../utils/fetchData';
 import HorizontalScrollbar from './HorizontalScrollbar';
@@ -7,12 +8,19 @@ import HorizontalScrollbar from './HorizontalScrollbar';
 const SearchExercises = ({ setExercises, bodyPart, setBodyPart }) => {
   const [search, setSearch] = useState('');
   const [bodyParts, setBodyParts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     const fetchExercisesData = async () => {
-      const bodyPartsData = await fetchData('https://exercisedb.p.rapidapi.com/exercises/bodyPartList', exerciseOptions);
-
-      setBodyParts(['all', ...bodyPartsData]);
+      try {
+        const bodyPartsData = await fetchData('https://exercisedb.p.rapidapi.com/exercises/bodyPartList', exerciseOptions);
+        setBodyParts(['all', ...bodyPartsData]);
+      } catch (error) {
+        console.error('Error fetching body parts:', error);
+      } finally {
+        setInitialLoading(false);
+      }
     };
 
     fetchExercisesData();
@@ -20,19 +28,27 @@ const SearchExercises = ({ setExercises, bodyPart, setBodyPart }) => {
 
   const handleSearch = async () => {
     if (search) {
-      const exercisesData = await fetchData('https://exercisedb.p.rapidapi.com/exercises', exerciseOptions);
+      setLoading(true);
+      try {
+        const exercisesData = await fetchData('https://exercisedb.p.rapidapi.com/exercises', exerciseOptions);
 
-      const searchedExercises = exercisesData.filter(
-        (item) => item.name.toLowerCase().includes(search)
-               || item.target.toLowerCase().includes(search)
-               || item.equipment.toLowerCase().includes(search)
-               || item.bodyPart.toLowerCase().includes(search),
-      );
+        const searchedExercises = exercisesData.filter(
+          (item) => item.name.toLowerCase().includes(search)
+                 || item.target.toLowerCase().includes(search)
+                 || item.equipment.toLowerCase().includes(search)
+                 || item.bodyPart.toLowerCase().includes(search),
+        );
 
-      window.scrollTo({ top: 1800, left: 100, behavior: 'smooth' });
+        window.scrollTo({ top: 1800, left: 100, behavior: 'smooth' });
 
-      setSearch('');
-      setExercises(searchedExercises);
+        setSearch('');
+        setExercises(searchedExercises);
+      } catch (error) {
+        console.error('Error searching exercises:', error);
+        // Optionally show an error message to the user
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -50,8 +66,32 @@ const SearchExercises = ({ setExercises, bodyPart, setBodyPart }) => {
           placeholder="Search Exercises"
           type="text"
         />
-        <Button className="search-btn" sx={{ bgcolor: '#C20114', color: '#fff', textTransform: 'none', width: { lg: '173px', xs: '80px' }, height: '56px', position: 'absolute', right: '0px', fontSize: { lg: '20px', xs: '14px' } }} onClick={handleSearch}>
-          Search
+        <Button 
+          className="search-btn" 
+          sx={{ 
+            bgcolor: '#C20114', 
+            color: '#fff', 
+            textTransform: 'none', 
+            width: { lg: '173px', xs: '80px' }, 
+            height: '56px', 
+            position: 'absolute', 
+            right: '0px', 
+            fontSize: { lg: '20px', xs: '14px' } 
+          }} 
+          onClick={handleSearch}
+          disabled={loading}
+        >
+          {loading ? (
+            <ThreeDots
+              height="24"
+              width="24"
+              radius="9"
+              color="#ffffff"
+              ariaLabel="loading"
+            />
+          ) : (
+            'Search'
+          )}
         </Button>
       </Box>
       <Box sx={{ position: 'relative', width: '100%', p: '20px' }}>
